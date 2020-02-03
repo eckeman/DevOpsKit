@@ -199,42 +199,6 @@
       "Rationale": "Just like classic admins, management certificates were used in the v1 model for script/tool based automation on Azure subscriptions. These management certificates are risky because the (private) key management hygiene tends to be lax. These certificates have no role to play in the current ARM-based model and should be immediately cleaned up if found on a subscription. (VS-deployment certificates from v1 timeframe are a good example of these.)"
     },
     {
-      "ControlID": "Azure_Subscription_Config_Azure_Security_Center",
-      "Description": "Azure Security Center (ASC) must be correctly configured on the subscription",
-      "Id": "SubscriptionCore180",
-      "ControlSeverity": "High",
-      "Automated": "Yes",
-      "MethodName": "CheckAzureSecurityCenterSettings",
-      "Recommendation": "Run command 'Set-AzSKAzureSecurityCenterPolicies -SubscriptionId '<SubscriptionId>' -SecurityContactEmails '<comma separated emails ids>' -SecurityPhoneNumber '<contact number>'. Run 'Get-Help Set-AzSKAzureSecurityCenterPolicies -full' for more help.",
-      "Tags": [
-        "SDL",
-        "TCP",
-        "Automated",
-        "Config",
-        "SOX",
-        "SubscriptionCore"
-      ],
-      "Enabled": true,
-      "DataObjectProperties": [
-        "id",
-        "properties.logCollection",
-        "properties.recommendations",
-        "properties.securityContactConfiguration.areNotificationsOn",
-        "properties.securityContactConfiguration.securityContactEmails",
-        "properties.securityContactConfiguration.securityContactPhone",
-        "properties.securityContactConfiguration.sendToAdminOn"
-      ],
-      "FixControl": {
-        "FixMethodName": "ConfigureSecurityCenter",
-        "FixControlImpact": "Medium",
-        "Parameters": {
-          "SecurityContactEmails": "",
-          "SecurityPhoneNumber": ""
-        }
-      },
-      "Rationale": "The Security Center feature in Azure helps with important central settings for the subscription such as configuring a security point of contact. It also supports key policy settings (e.g., is patching configured for VMs?, is threat detection enabled for SQL?, etc.) and alerts about resources which are not compliant to those policy settings. Correctly configuring ASC is critical as it gives a baseline layer of protection for the subscription and commonly used resource types."
-    },
-    {
       "ControlID": "Azure_Subscription_Audit_Resolve_Azure_Security_Center_Alerts",
       "Description": "Pending Azure Security Center (ASC) alerts must be resolved",
       "Id": "SubscriptionCore190",
@@ -546,6 +510,114 @@
       ],
       "Enabled": true,     
       "Rationale": "The regular / day to day use accounts are subject to a lot of credential theft attacks due to various activities that a user conducts using such accounts (e.g., browsing the web, clicking on email links, etc.). A user account that gets compromised (say via a phishing attack) immediately subjects the entire cloud subscription to risk if it is a member of critical roles in the subscription. Use of smartcard-backed alternate (SC-ALT) accounts instead protects the cloud subscriptions from this risk. Moreover, for complete protection, all sensitive access must be done using a secure admin workstation (SAW) and Azure Privileged Identity Management (PIM)."
+    },
+    {
+      "ControlID": "Azure_Subscription_Config_Security_Policy",
+      "Description": "Azure Security Center (ASC) must be correctly configured on the subscription",
+      "Id": "SubscriptionCore330",
+      "ControlSeverity": "Medium",
+      "Automated": "Yes",
+      "MethodName": "CheckSecurityPolicy",
+      "Recommendation": "Run command 'Set-AzSKAzureSecurityCenterPolicies -SubscriptionId '<SubscriptionId>' -SecurityContactEmails '<comma separated emails ids>' -SecurityPhoneNumber '<contact number>'. Run 'Get-Help Set-AzSKAzureSecurityCenterPolicies -full' for more help.",
+      "Tags": [
+        "SDL",
+        "TCP",
+        "Automated",
+        "Config",
+        "SOX",
+        "SubscriptionCore"
+      ],
+      "Enabled": true,
+      "DataObjectProperties": [
+        "id",
+        "properties.logCollection",
+        "properties.recommendations",
+        "properties.securityContactConfiguration.areNotificationsOn",
+        "properties.securityContactConfiguration.securityContactEmails",
+        "properties.securityContactConfiguration.securityContactPhone",
+        "properties.securityContactConfiguration.sendToAdminOn"
+      ],
+      "FixControl": {
+        "FixMethodName": "ConfigureSecurityCenter",
+        "FixControlImpact": "Medium",
+        "Parameters": {
+          "SecurityContactEmails": "",
+          "SecurityPhoneNumber": ""
+        }
+      },
+      "Rationale": "The Security Center feature in Azure helps with important central settings for the subscription such as configuring a security point of contact. It also supports key policy settings (e.g., is patching configured for VMs?, is threat detection enabled for SQL?, etc.) and alerts about resources which are not compliant to those policy settings. Correctly configuring ASC is critical as it gives a baseline layer of protection for the subscription and commonly used resource types."
+    },
+    {
+      "ControlID": "Azure_Subscription_Config_AutoProvisioning",
+      "Description": "AutoProvisioning must be enabled for automatic installation of missing security agents on VMs",
+      "Id": "SubscriptionCore340",
+      "ControlSeverity": "High",
+      "Automated": "Yes",
+      "MethodName": "CheckAutoProvisioningForSecurity",
+      "Recommendation": "For setting AutoProvisioning settings for your subscription, go to azure portal https://portal.azure.com. On the portal select your subscription, Home-->Seurity center - Pricing & Settings-->Settings - Data Collection",
+      "Tags": [
+        "SDL",
+        "TCP",
+        "Automated",
+        "Config",
+        "SOX",
+        "SubscriptionCore"
+      ],
+      "Enabled": true,
+      "DataObjectProperties": [
+        "id",
+        "properties.logCollection",
+        "properties.recommendations",
+        "properties.securityContactConfiguration.areNotificationsOn",
+        "properties.securityContactConfiguration.securityContactEmails",
+        "properties.securityContactConfiguration.securityContactPhone",
+        "properties.securityContactConfiguration.sendToAdminOn"
+      ],
+      "FixControl": {
+        "FixMethodName": "ConfigureSecurityCenter",
+        "FixControlImpact": "Medium",
+        "Parameters": {
+          "SecurityContactEmails": "",
+          "SecurityPhoneNumber": ""
+        }
+      },
+      "Rationale": "When automatic provisioning is On, Security Center provisions the Log Analytics Agent(Microsoft Monitoring Agent) on all supported Azure VMs and any new ones that are created. Automatic provisioning is strongly recommended but manual agent installation is also available."
+    },
+    {
+      "ControlID": "Azure_Subscription_Config_SecurityContact_Details",
+      "Description": "Security contact details must be configured for your subscription, as this information is used by Microsoft to contact you, if it discovers any unlawful or unauthorised access to your subscription. ",
+      "Id": "SubscriptionCore350",
+      "ControlSeverity": "High",
+      "Automated": "Yes",
+      "MethodName": "CheckSecurityContactDetails",
+      "Recommendation": "Run command 'Set-AzSKAzureSecurityCenterPolicies -SubscriptionId '<SubscriptionId>' -SecurityContactEmails '<comma separated emails ids>' -SecurityPhoneNumber '<contact number>'. Run 'Get-Help Set-AzSKAzureSecurityCenterPolicies -full' for more help.",
+      "Tags": [
+        "SDL",
+        "TCP",
+        "Automated",
+        "Config",
+        "SOX",
+        "SubscriptionCore"
+      ],
+      "Enabled": true,
+      "DataObjectProperties": [
+        "id",
+        "properties.logCollection",
+        "properties.recommendations",
+        "properties.securityContactConfiguration.areNotificationsOn",
+        "properties.securityContactConfiguration.securityContactEmails",
+        "properties.securityContactConfiguration.securityContactPhone",
+        "properties.securityContactConfiguration.sendToAdminOn"
+      ],
+      "FixControl": {
+        "FixMethodName": "ConfigureSecurityCenter",
+        "FixControlImpact": "Medium",
+        "Parameters": {
+          "SecurityContactEmails": "",
+          "SecurityPhoneNumber": ""
+        }
+      },
+      "Rationale": "Azure Security Center recommends to provide security contact details for your Azure subscription if you haven’t. This information will be used by Microsoft to contact you if the Microsoft Security Response Center (MSRC) discovers that your customer data has been accessed by an unlawful or unauthorized party. "
     }
   ]
 }

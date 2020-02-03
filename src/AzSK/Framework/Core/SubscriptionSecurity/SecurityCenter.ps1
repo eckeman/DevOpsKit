@@ -17,6 +17,7 @@ class SecurityCenter: AzSKRoot
 	[string] $SQLASCTier = "";
 	[string] $AppSvcASCTier = "";
 	[string] $StorageASCTier = "";
+	hidden [string[]] $ResourceASCTier = @();
 
 	SecurityCenter([string] $subscriptionId,[bool]$registerASCProvider): 
         Base($subscriptionId)
@@ -62,32 +63,6 @@ class SecurityCenter: AzSKRoot
 		$this.CheckAutoProvisioningSettings();
 		#this function would fetch ASC Tier details
 		$this.CheckASCTierSettings();
-	}
-
-
-	hidden [string[]] CheckASCCompliance()
-	{
-		$statuses = @();
-		$response = $this.CheckAutoProvisioningSettings();
-		if(-not [string]::IsNullOrWhiteSpace($response))
-		{
-			$statuses += $response;
-		}
-		$response = $this.CheckSecurityContactSettings();
-		if(-not [string]::IsNullOrWhiteSpace($response))
-		{
-			$statuses += $response;
-		}
-
-		$response = $this.CheckSecurityPolicySettings();
-		if(($response | Measure-Object).Count -gt 0)
-		{
-			$statuses += $response;
-		}
-
-		$this.CheckASCTierSettings();
-
-		return $statuses;
 	}
 
 	hidden [void] LoadCurrentPolicy()
@@ -185,6 +160,7 @@ class SecurityCenter: AzSKRoot
 				if([Helpers]::CheckMember($response, "properties.autoProvision"))
 				{
 					$this.AutoProvisioningSettings = $response.properties.autoProvision;
+					#return $this.AutoProvisioningSettings;
 				}			
 			}
             catch
@@ -277,24 +253,11 @@ class SecurityCenter: AzSKRoot
 
         foreach($resourceDetails in $ascTierResourceWiseDetails)
         {
-            if([Helpers]::CheckMember($resourceDetails,"name"))
+            if([Helpers]::CheckMember($resourceDetails,"properties.pricingTier"))
             {
-                if([Helpers]::CheckMember($resourceDetails,"properties.pricingTier"))
-                {
-                    if($resourceDetails.name -eq 'VirtualMachines'){
-                        $this.VMASCTier = $resourceDetails.properties.pricingTier
-                    }
-                    elseif($resourceDetails.name -eq 'SqlServers'){
-                        $this.SQLASCTier = $resourceDetails.properties.pricingTier
-                    }
-                    elseif($resourceDetails.name -eq 'AppServices'){
-                        $this.AppSvcASCTier = $resourceDetails.properties.pricingTier
-                    }
-                    elseif($resourceDetails.name -eq 'StorageAccounts'){
-                        $this.StorageASCTier = $resourceDetails.properties.pricingTier
-                    }
-                }
+                $this.ResourceASCTier = $resourceDetails.properties.pricingTier
             }
+            
         }   
 
 	}
