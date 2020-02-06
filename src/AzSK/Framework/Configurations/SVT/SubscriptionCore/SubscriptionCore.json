@@ -513,12 +513,12 @@
     },
     {
       "ControlID": "Azure_Subscription_Config_Security_Policy",
-      "Description": "Azure Security Center (ASC) must be correctly configured on the subscription",
+      "Description": "Azure Security Center (ASC) policies must be correctly configured on the subscription, as it defines the desired configuration of your workloads and helps ensure you're complying with the security requirements of your company or regulators.",
       "Id": "SubscriptionCore330",
       "ControlSeverity": "Medium",
       "Automated": "Yes",
       "MethodName": "CheckSecurityPolicy",
-      "Recommendation": "Run command 'Set-AzSKAzureSecurityCenterPolicies -SubscriptionId '<SubscriptionId>' -SecurityContactEmails '<comma separated emails ids>' -SecurityPhoneNumber '<contact number>'. Run 'Get-Help Set-AzSKAzureSecurityCenterPolicies -full' for more help.",
+      "Recommendation": "Run command 'Set-AzSKAzureSecurityCenterPolicies -SubscriptionId '<SubscriptionId>' -SecurityContactEmails '<comma separated emails ids>' -SecurityPhoneNumber '<contact number>'. Run 'Get-Help Set-AzSKAzureSecurityCenterPolicies -full' for more help. You can also manage your policy settings from azure portal https://portal.azure.com for more details, visit https://docs.microsoft.com/en-us/azure/security-center/tutorial-security-policy ",
       "Tags": [
         "SDL",
         "TCP",
@@ -545,7 +545,7 @@
           "SecurityPhoneNumber": ""
         }
       },
-      "Rationale": "The Security Center feature in Azure helps with important central settings for the subscription such as configuring a security point of contact. It also supports key policy settings (e.g., is patching configured for VMs?, is threat detection enabled for SQL?, etc.) and alerts about resources which are not compliant to those policy settings. Correctly configuring ASC is critical as it gives a baseline layer of protection for the subscription and commonly used resource types."
+      "Rationale": "ASC security policies defines the desired configuration of your workloads and helps ensure you're complying with the security requirements of your company or regulators. It provides key policy settings (e.g., is patching configured for VMs?, is threat detection enabled for SQL?, etc.) and alerts about resources which are not compliant to those policy settings. Correctly configuring ASC is critical as it gives a baseline layer of protection for the subscription and commonly used resource types."
     },
     {
       "ControlID": "Azure_Subscription_Config_AutoProvisioning",
@@ -554,7 +554,7 @@
       "ControlSeverity": "High",
       "Automated": "Yes",
       "MethodName": "CheckAutoProvisioningForSecurity",
-      "Recommendation": "For setting AutoProvisioning settings for your subscription, go to azure portal https://portal.azure.com. On the portal select your subscription, Home-->Seurity center - Pricing & Settings-->Settings - Data Collection",
+      "Recommendation": "For setting AutoProvisioning settings for your subscription, go to azure portal https://portal.azure.com. On the portal go to -->Seurity center - Pricing & Settings-->Select your subscription-->Settings - Data Collection, also you can run the command 'Set-AzSKAzureSecurityCenterPolicies -SubscriptionId '<SubscriptionId>' -SecurityContactEmails '<comma separated emails ids>' -SecurityPhoneNumber '<contact number>'' for setting up AutoProvisioning settings ",
       "Tags": [
         "SDL",
         "TCP",
@@ -617,7 +617,7 @@
           "SecurityPhoneNumber": ""
         }
       },
-      "Rationale": "Azure Security Center recommends to provide security contact details for your Azure subscription if you haven’t. This information will be used by Microsoft to contact you if the Microsoft Security Response Center (MSRC) discovers that your customer data has been accessed by an unlawful or unauthorized party. "
+      "Rationale": "Azure Security Center recommends to provide security contact details for your Azure subscription, if you haven’t. This information will be used by Microsoft to contact you if the Microsoft Security Response Center (MSRC) discovers that your customer data has been accessed by an unlawful or unauthorized party. "
     }
   ]
 }
