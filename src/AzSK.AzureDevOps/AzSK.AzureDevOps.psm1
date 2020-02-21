@@ -1,4 +1,4 @@
-﻿Set-StrictMode -Version Latest
+Set-StrictMode -Version Latest
 
 . $PSScriptRoot\Framework\Framework.ps1
 
@@ -125,6 +125,6 @@ function Clear-AzSKSessionState {
 
 }
 
- $FrameworkPath =  ((Get-Item $PSScriptRoot).Parent).FullName +"\AzSK.Framework"
+$FrameworkPath = $PSScriptRoot
 
-. $FrameworkPath\Helpers\AliasHelper.ps1
+. $FrameworkPath\Framework\Helpers\AliasHelper.ps1
