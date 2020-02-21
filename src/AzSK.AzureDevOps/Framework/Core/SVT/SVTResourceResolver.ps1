@@ -34,7 +34,7 @@ class SVTResourceResolver: AzSKRoot
 
     SVTResourceResolver([string]$organizationName,$ProjectNames,$BuildNames,$ReleaseNames,$AgentPools, $ServiceConnectionNames, $MaxObj, $ScanAllArtifacts,$PATToken,$ResourceTypeName): Base($organizationName,$PATToken)
 	{
-        $this.MaxObjectsToScan = $MaxObj #default = 0 => scan all if "*" specified.
+        $this.MaxObjectsToScan = $MaxObj #default = 0 => scan all if "*" specified..
 
         $this.SetallTheParamValues($organizationName,$ProjectNames,$BuildNames,$ReleaseNames,$AgentPools,$ScanAllArtifacts,$PATToken,$ResourceTypeName);
         if(-not [string]::IsNullOrEmpty($ServiceConnectionNames))
@@ -54,7 +54,7 @@ class SVTResourceResolver: AzSKRoot
     }
 
     [void] SetallTheParamValues([string]$organizationName,$ProjectNames,$BuildNames,$ReleaseNames,$AgentPools,$ScanAllArtifacts,$PATToken,$ResourceTypeName)
-	{
+	{      
         $this.organizationName = $organizationName
         $this.ResourceTypeName = $ResourceTypeName
 
@@ -114,13 +114,15 @@ class SVTResourceResolver: AzSKRoot
             $apiURL = "https://dev.azure.com/{0}/_apis/Contribution/HierarchyQuery?api-version=5.0-preview.1" -f $($this.organizationName);
 
             $inputbody = "{'contributionIds':['ms.vss-features.my-organizations-data-provider'],'dataProviderContext':{'properties':{'sourcePage':{'url':'https://dev.azure.com/$($this.organizationName)','routeId':'ms.vss-tfs-web.suite-me-page-route','routeValues':{'view':'projects','controller':'ContributedPage','action':'Execute'}}}}}" | ConvertFrom-Json
-            #try {
+            try {
                 $responseObj = [WebRequestHelper]::InvokePostWebRequest($apiURL,$inputbody);
-           # }
-            #catch {
-            #    Write-Error 'Organization not found: Incorrect organization name or you do not have neccessary permission to access the organization.'
-             #   [ListenerHelper]::UnregisterListeners();
-            #}
+                $inputbody = $null;
+            }
+            catch {
+                Write-Error 'Organization not found: Incorrect organization name or you do not have neccessary permission to access the organization.'
+                #[ListenerHelper]::UnregisterListeners();
+                throw;
+            }
            
             #Select Org/User by default...
             $svtResource = [SVTResource]::new();
@@ -130,7 +132,10 @@ class SVTResourceResolver: AzSKRoot
             $svtResource.ResourceTypeMapping = ([SVTMapping]::AzSKDevOpsResourceMapping |
                                             Where-Object { $_.ResourceType -eq $svtResource.ResourceType } |
                                             Select-Object -First 1)
+
+            $svtResource.ResourceDetails  = New-Object -TypeName psobject -Property @{ ResourceLink = $svtResource.ResourceId.Replace('Organization','https://dev.azure.com') + "_settings/"; }
             $this.SVTResources +=$svtResource
+            
         }
 
         if($this.ResourceTypeName -eq [ResourceTypeName]::All -or $this.ResourceTypeName -eq [ResourceTypeName]::User)
@@ -142,6 +147,8 @@ class SVTResourceResolver: AzSKRoot
             $svtResource.ResourceTypeMapping = ([SVTMapping]::AzSKDevOpsResourceMapping |
                                             Where-Object { $_.ResourceType -eq $svtResource.ResourceType } |
                                             Select-Object -First 1)
+           
+            $svtResource.ResourceDetails  = New-Object -TypeName psobject -Property @{ ResourceLink = ($svtResource.ResourceId.Replace('Organization','https://dev.azure.com') + "_settings/users") }
             $this.SVTResources +=$svtResource
         }
 
@@ -157,6 +164,8 @@ class SVTResourceResolver: AzSKRoot
 
             $projects = $responseObj  | Where-Object {  (($this.ProjectNames -contains $_.name) -or ($this.ProjectNames -eq "*"))  } #| ForEach-Object {
                
+            $responseObj =$null;  
+
             $nProj = $this.MaxObjectsToScan;
             if(!$projects)  
             {
@@ -176,6 +185,8 @@ class SVTResourceResolver: AzSKRoot
                                                 Where-Object { $_.ResourceType -eq $svtResource.ResourceType } |
                                                 Select-Object -First 1)
                 
+               
+                $svtResource.ResourceDetails = New-Object -TypeName psobject -Property @{ ResourceLink = ($svtResource.ResourceId.Replace('/_apis/projects','') + '/_settings/') }
                 $this.SVTResources +=$svtResource
             }
 
@@ -194,8 +205,9 @@ class SVTResourceResolver: AzSKRoot
                 {
                     # Currently get only Azure Connections as all controls are applicable for same
                     #TODO: temp added git in the where
-                    $azureConnections = $serviceEndpointObj | Where-Object { ($_.type -eq "azurerm" -or $_.type -eq "azure" -or $_.type -eq "git" -or $_.type -eq "github") -and (($this.ServiceConnections -contains $_.name) -or ($this.ServiceConnections -eq "*")) } #-or $_.type -eq "git" -or $_.type -eq "git"
+                    $azureConnections = $serviceEndpointObj | Where-Object { ($_.type -eq "azurerm" -or $_.type -eq "azure" -or $_.type -eq "git" -or $_.type -eq "github") -and (($this.ServiceConnections -eq $_.name) -or ($this.ServiceConnections -eq "*")) } #-or $_.type -eq "git" -or $_.type -eq "git"
 
+                    $serviceEndpointObj =$null;
                     $nObj = $this.MaxObjectsToScan
                     foreach ($connectionObject in $azureConnections)
                     {
@@ -207,7 +219,11 @@ class SVTResourceResolver: AzSKRoot
                         $svtResource.ResourceTypeMapping = ([SVTMapping]::AzSKDevOpsResourceMapping |
                                                         Where-Object { $_.ResourceType -eq $svtResource.ResourceType } |
                                                         Select-Object -First 1)
+                        
+                        
                         $svtResource.ResourceDetails = $connectionObject
+                        $link = $svtResource.ResourceId.Replace('Organization','https://dev.azure.com').Replace('Project/','').Replace( $connectionObject.Name,"_settings/adminservices?resourceId=$($svtResource.ResourceDetails.id)") ;
+                        $svtResource.ResourceDetails  | Add-Member -Name 'ResourceLink' -Type NoteProperty -Value $link;
                         $this.SVTResources +=$svtResource
 
                         if (--$nObj -eq 0) {break;}
@@ -240,10 +256,13 @@ class SVTResourceResolver: AzSKRoot
                                                                 Where-Object { $_.ResourceType -eq $svtResource.ResourceType } |
                                                                 Select-Object -First 1)
                                 $svtResource.ResourceDetails = $bldDef
+                                $link = $svtResource.ResourceId.replace('_apis/build/Definitions','_build?definitionId=').split('?')[0];
+                                $svtResource.ResourceDetails  | Add-Member -Name 'ResourceLink' -Type NoteProperty -Value $link;
                                 $this.SVTResources +=$svtResource
 
                                 if (--$nObj -eq 0) { break;} 
                             }
+                            $buildDefnsObj = $null;
                         }
                     }
                     else
@@ -264,8 +283,13 @@ class SVTResourceResolver: AzSKRoot
                                     $svtResource.ResourceTypeMapping = ([SVTMapping]::AzSKDevOpsResourceMapping |
                                                                     Where-Object { $_.ResourceType -eq $svtResource.ResourceType } |
                                                                     Select-Object -First 1)
+                                    
+                                    $link = $svtResource.ResourceId.replace('_apis/build/Definitions','_build?definitionId=').split('?')[0];
+                                    $svtResource.ResourceDetails = New-Object -TypeName psobject -Property @{ ResourceLink = $link }
+                                                                    
                                     $this.SVTResources +=$svtResource
                                 }
+                                $buildDefnsObj = $null;
                             }
                         }
                     }
@@ -280,6 +304,16 @@ class SVTResourceResolver: AzSKRoot
                     }
                     if($this.ReleaseNames -eq "*")
                     {
+                        #TODO: pagination test
+                        try {
+                            $t = "https://vsrm.dev.azure.com/{0}/{1}/_apis/release/definitions?maxResults=2&pagingToken=''&api-version=4.1-preview.3" -f $($this.SubscriptionContext.SubscriptionName), $projectName;
+                            $tr = [WebRequestHelper]::InvokeGetWebRequest($t);
+                        
+                        }
+                        catch {
+                            Write-Output $_;
+                        }
+                        
                         $releaseDefnURL = "https://vsrm.dev.azure.com/{0}/{1}/_apis/release/definitions?api-version=4.1-preview.3" -f $($this.SubscriptionContext.SubscriptionName), $projectName;
                         $releaseDefnsObj = [WebRequestHelper]::InvokeGetWebRequest($releaseDefnURL);
                         if(([Helpers]::CheckMember($releaseDefnsObj,"count") -and $releaseDefnsObj[0].count -gt 0) -or  (($releaseDefnsObj | Measure-Object).Count -gt 0 -and [Helpers]::CheckMember($releaseDefnsObj[0],"name")))
@@ -294,10 +328,15 @@ class SVTResourceResolver: AzSKRoot
                                 $svtResource.ResourceTypeMapping = ([SVTMapping]::AzSKDevOpsResourceMapping |
                                                                 Where-Object { $_.ResourceType -eq $svtResource.ResourceType } |
                                                                 Select-Object -First 1)
+                                
+                                $link = "https://dev.azure.com/{0}/{1}/_release?_a=releases&view=mine&definitionId={2}" -f $this.SubscriptionContext.SubscriptionName,$projectName,$svtResource.ResourceId.split('/')[-1];
+                                $svtResource.ResourceDetails = New-Object -TypeName psobject -Property @{ ResourceLink = $link }
+                                 
                                 $this.SVTResources +=$svtResource
 
                                 if (--$nObj -eq 0) { break;} 
                             }
+                            $releaseDefnsObj =$null;
                         }
                     }
                     else
@@ -340,8 +379,13 @@ class SVTResourceResolver: AzSKRoot
                                     $svtResource.ResourceTypeMapping = ([SVTMapping]::AzSKDevOpsResourceMapping |
                                                                     Where-Object { $_.ResourceType -eq $svtResource.ResourceType } |
                                                                     Select-Object -First 1)
+                                    
+                                    $link = "https://dev.azure.com/{0}/{1}/_release?_a=releases&view=mine&definitionId={2}" -f $this.SubscriptionContext.SubscriptionName,$projectName,$svtResource.ResourceId.split('/')[-1];
+                                    $svtResource.ResourceDetails = New-Object -TypeName psobject -Property @{ ResourceLink = $link }
+                                                                    
                                     $this.SVTResources +=$svtResource
                                 }
+                                $releaseDefinitions =$null;
                         }
 
                         }
@@ -384,6 +428,7 @@ class SVTResourceResolver: AzSKRoot
 
                                     if (--$nObj -eq 0){break;}
                                 }
+                                $taskAgentQueues = $null;
                             }
                         }
                         catch {
